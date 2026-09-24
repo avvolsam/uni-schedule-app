@@ -19,8 +19,8 @@ export default defineConfig({
         description: 'Расписание занятий, которое само обновляется каждый день',
         start_url: '.',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#4338ca',
+        background_color: '#faf6f5',
+        theme_color: '#b31b17',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

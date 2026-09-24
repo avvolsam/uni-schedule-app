@@ -8,10 +8,10 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const OUT_DIR = path.resolve(process.cwd(), process.env.ICON_OUT_DIR || 'public/icons');
-// Override with ICON_COLOR=#rrggbb to recolour the icon (default: the app's indigo).
-const BRAND = process.env.ICON_COLOR || '#4338ca';
+// Override with ICON_COLOR=#rrggbb to recolour the icon (default: the university's red).
+const BRAND = process.env.ICON_COLOR || '#b31b17';
 
-// Simple calendar glyph on a rounded indigo square. `pad` leaves safe-zone margin for
+// Simple calendar glyph on a rounded red square. `pad` leaves safe-zone margin for
 // maskable icons (Android may crop to a circle).
 function svg({ size, pad = 0 }) {
   const inner = size - pad * 2;
