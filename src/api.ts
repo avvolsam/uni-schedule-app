@@ -1,4 +1,4 @@
-import { groupCodeToFileSlug } from './groupSlug';
+import { groupCodeToFileSlug } from '../shared/groupSlug.mjs';
 import type { Direction, GroupsIndex, Meta, ScheduleFile, Taxonomies } from './types';
 
 const dataUrl = (path: string) => `${import.meta.env.BASE_URL}data/${path}`;

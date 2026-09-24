@@ -26,3 +26,11 @@ public/data
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets must never be committed: OneSignal keys go into GitHub Actions secrets, not files.
+.env
+.env.*
+!.env.example
+
+# Previous-run schedule snapshot used by scripts/notify-changes.mjs (CI cache only).
+.baseline

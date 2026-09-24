@@ -21,6 +21,7 @@ export interface GroupInfo {
   courseIds: number[];
   formIds: number[];
   monthIds: number[];
+  postIds: number[];
   fileSlug: string;
 }
 
@@ -57,4 +58,22 @@ export interface Meta {
 export interface SavedSelection {
   groupCode: string;
   directionBreadcrumb: string;
+}
+
+export interface StoredSchedule {
+  groupCode: string;
+  lessons: Lesson[];
+  timestamp: string; // ISO time this version of the data was produced
+  source: 'live' | 'server'; // straight from spb.ranepa.ru, or from the app's own daily/hourly build
+}
+
+export interface LessonsDiff {
+  added: Lesson[];
+  removed: Lesson[];
+  changed: { before: Lesson; after: Lesson }[];
+}
+
+export interface PendingChange {
+  detectedAt: string;
+  diff: LessonsDiff;
 }

@@ -11,7 +11,7 @@
 // finding the common leading "-"-separated tokens across all distinct "Группы" values
 // in a post, then treating the remaining trailing tokens as the group-number part.
 
-import * as cheerio from 'cheerio';
+import * as cheerio from 'cheerio/slim';
 
 const HEADER_MATCHERS = [
   ['dayOfWeek', /день/],

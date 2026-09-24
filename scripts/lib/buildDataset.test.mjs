@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDataset } from './buildDataset.mjs';
-import { groupCodeToFileSlug } from './groupSlug.mjs';
+import { groupCodeToFileSlug } from '../../shared/groupSlug.mjs';
 import {
   SEMESTER_TABLE_SUBSET,
   GIA_SINGLE_GROUP_TABLE,
@@ -113,6 +113,24 @@ test('buildDataset finds the deepest (most specific) level term as each directio
   assert.equal(byId.has(275), false);
   assert.equal(byId.has(1), false);
   assert.equal(byId.has(2), false);
+});
+
+test('buildDataset records which posts each group came from (for live refresh)', () => {
+  const { groupsJson } = buildDataset(FAKE_POSTS, FAKE_TAXONOMIES, new Date('2026-09-01'));
+  assert.deepEqual(groupsJson['ЭК-3-24-03'].postIds, [106473]);
+  assert.deepEqual(groupsJson['ЭК-6-23-01'].postIds, [244572]);
+});
+
+test('buildDataset removes the same lesson listed in two overlapping posts', () => {
+  const overlappingPost = { ...FAKE_POSTS[0], id: 555, slug: 'ek-3-24-mesyac' };
+  const { scheduleFiles } = buildDataset(
+    [FAKE_POSTS[0], overlappingPost],
+    FAKE_TAXONOMIES,
+    new Date('2026-09-01')
+  );
+  const single = buildDataset([FAKE_POSTS[0]], FAKE_TAXONOMIES, new Date('2026-09-01'));
+  const slug = groupCodeToFileSlug('ЭК-3-24-03');
+  assert.equal(scheduleFiles.get(slug).lessons.length, single.scheduleFiles.get(slug).lessons.length);
 });
 
 test('buildDataset reports parse failure count without throwing on malformed content', () => {

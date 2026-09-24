@@ -1,28 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchSchedule } from '../api';
+import { formatClock, formatDateTime, formatDayLabel, todayIso } from '../format';
+import {
+  autoLiveRefresh,
+  dismissChanges,
+  loadFromServer,
+  loadLocalState,
+  refreshNow,
+  type ScheduleState,
+} from '../schedule';
 import type { Lesson, SavedSelection } from '../types';
+import ChangesBanner from './ChangesBanner';
+import NotificationsPanel from './NotificationsPanel';
 
 interface Props {
   selection: SavedSelection;
   onChangeGroup: () => void;
 }
 
-const WEEKDAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-const MONTH_NAMES = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-];
-
-function formatDayLabel(iso: string): string {
-  const d = new Date(iso + 'T00:00:00');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
-
-  const dateStr = `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}, ${WEEKDAY_NAMES[d.getDay()]}`;
-  if (diffDays === 0) return `Сегодня, ${dateStr}`;
-  if (diffDays === 1) return `Завтра, ${dateStr}`;
-  return dateStr;
+interface Status {
+  kind: 'ok' | 'warn' | 'error';
+  text: string;
 }
 
 function groupByDate(lessons: Lesson[]): [string, Lesson[]][] {
@@ -36,76 +33,113 @@ function groupByDate(lessons: Lesson[]): [string, Lesson[]][] {
 }
 
 export default function ScheduleView({ selection, onChangeGroup }: Props) {
-  const [lessons, setLessons] = useState<Lesson[] | null>(null);
-  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const group = selection.groupCode;
+  const [state, setState] = useState<ScheduleState>(() => loadLocalState(group));
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
+  // On open: show whatever is saved on the phone instantly (state initialiser above),
+  // then fetch the app's latest published data, then — if it's been a while — ask the
+  // university site directly in the background.
   useEffect(() => {
     let cancelled = false;
-    setError(null);
-    fetchSchedule(selection.groupCode)
-      .then((data) => {
-        if (cancelled) return;
-        setLessons(data.lessons);
-        setGeneratedAt(data.generatedAt);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || 'Не удалось загрузить расписание');
-      });
+    (async () => {
+      try {
+        const s = await loadFromServer(group);
+        if (!cancelled) setState(s);
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err));
+      }
+      const live = await autoLiveRefresh(group);
+      if (!cancelled && live) setState(live);
+    })();
     return () => {
       cancelled = true;
     };
-  }, [selection.groupCode, refreshKey]);
+  }, [group]);
 
-  const upcomingLessons = useMemo(() => {
-    if (!lessons) return null;
-    const todayIso = new Date().toISOString().slice(0, 10);
-    return lessons.filter((l) => !l.date || l.date >= todayIso);
-  }, [lessons]);
+  async function handleRefresh() {
+    setBusy(true);
+    setStatus(null);
+    const outcome = await refreshNow(group);
+    setState(outcome.state);
+    setBusy(false);
 
-  const days = useMemo(
-    () => (upcomingLessons ? groupByDate(upcomingLessons) : []),
-    [upcomingLessons]
-  );
+    if (outcome.via === 'live') {
+      setStatus({
+        kind: 'ok',
+        text: outcome.changed
+          ? 'Обновлено с сайта РАНХиГС. Есть изменения — они показаны выше.'
+          : 'Обновлено с сайта РАНХиГС. Изменений нет.',
+      });
+    } else if (outcome.via === 'server') {
+      const built = outcome.state.stored ? formatClock(outcome.state.stored.timestamp) : '';
+      setStatus({
+        kind: 'warn',
+        text: `Напрямую с сайта РАНХиГС получить не удалось (${outcome.liveError}). Показана последняя версия, собранная приложением${built ? ` в ${built}` : ''}.`,
+      });
+    } else {
+      setStatus({ kind: 'error', text: `Не удалось обновить: ${outcome.error}` });
+    }
+  }
+
+  const { stored, changes } = state;
+
+  const days = useMemo(() => {
+    if (!stored) return [];
+    const today = todayIso();
+    return groupByDate(stored.lessons.filter((l) => !l.date || l.date >= today));
+  }, [stored]);
 
   return (
     <div className="schedule">
       <header className="schedule-header">
         <div>
-          <h1>{selection.groupCode}</h1>
+          <h1>{group}</h1>
           {selection.directionBreadcrumb && (
             <p className="breadcrumb">{selection.directionBreadcrumb}</p>
           )}
         </div>
         <div className="header-actions">
-          <button onClick={() => setRefreshKey((k) => k + 1)} title="Обновить">
+          <button
+            onClick={handleRefresh}
+            disabled={busy}
+            className={busy ? 'spinning' : ''}
+            title="Обновить расписание"
+            aria-label="Обновить расписание"
+          >
             ↻
           </button>
-          <button onClick={onChangeGroup} title="Сменить группу">
+          <button onClick={onChangeGroup} title="Сменить группу" aria-label="Сменить группу">
             ⚙
           </button>
         </div>
       </header>
 
-      {generatedAt && (
+      {stored && (
         <p className="updated-at">
-          Обновлено: {new Date(generatedAt).toLocaleString('ru-RU')}
+          Обновлено: {formatDateTime(stored.timestamp)} ·{' '}
+          {stored.source === 'live' ? 'напрямую с сайта РАНХиГС' : 'сборка приложения'}
         </p>
       )}
 
-      {error && (
+      {busy && <p className="hint">Проверяю сайт РАНХиГС…</p>}
+      {status && <p className={`status status-${status.kind}`}>{status.text}</p>}
+
+      <ChangesBanner changes={changes} onDismiss={() => setState(dismissChanges(group))} />
+
+      <NotificationsPanel groupCode={group} />
+
+      {!stored && loadError && (
         <div className="error-box">
-          <p className="error">{error}</p>
-          <p className="hint">Показано последнее сохранённое расписание, если оно есть.</p>
+          <p className="error">Не удалось загрузить расписание: {loadError}</p>
+          <p className="hint">Проверьте интернет и нажмите ↻.</p>
         </div>
       )}
+      {!stored && !loadError && <p>Загрузка расписания…</p>}
 
-      {!lessons && !error && <p>Загрузка расписания…</p>}
-
-      {lessons && days.length === 0 && (
-        <p className="hint">Ближайших занятий не найдено.</p>
-      )}
+      {stored && days.length === 0 && <p className="hint">Ближайших занятий не найдено.</p>}
 
       {days.map(([date, dayLessons]) => (
         <section key={date} className="day">
@@ -129,6 +163,11 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
           </ul>
         </section>
       ))}
+
+      <p className="footer-note">
+        Неофициальное приложение, не связано с РАНХиГС. Данные берутся с открытого сайта
+        spb.ranepa.ru. Выбранная группа и расписание хранятся только на вашем телефоне.
+      </p>
     </div>
   );
 }

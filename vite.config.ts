@@ -35,6 +35,9 @@ export default defineConfig({
       workbox: {
         // App shell: cache-first (versioned by the build hash, safe to serve instantly).
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // OneSignal's worker lives in its own scope (push/) and must stay a live network
+        // file, not a copy frozen in the app's offline cache.
+        globIgnores: ['push/**'],
         // Schedule data: try the network first so a fresh daily update is picked up
         // immediately when online, but fall back to the last cached copy offline.
         runtimeCaching: [

@@ -7,6 +7,7 @@
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { buildDataset } from './lib/buildDataset.mjs';
+import { groupCodeToFileSlug } from '../shared/groupSlug.mjs';
 import {
   SEMESTER_TABLE_SUBSET,
   GIA_SINGLE_GROUP_TABLE,
@@ -75,6 +76,25 @@ async function main() {
     taxonomies,
     new Date()
   );
+
+  // The fixtures' dates are in the past by now; give ЭК-3-24-03 a few upcoming lessons
+  // (relative to today) so the UI has something to show.
+  const slug03 = groupCodeToFileSlug('ЭК-3-24-03');
+  const iso = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const base = { groupCode: 'ЭК-3-24-03', dayOfWeek: null, position: 'доц.' };
+  scheduleFiles.set(slug03, {
+    groupCode: 'ЭК-3-24-03',
+    generatedAt: new Date().toISOString(),
+    lessons: [
+      { ...base, date: iso(1), time: '08:30-11:20', type: 'Л', subject: 'Маркетинг', teacher: 'Минаев Д.В.', room: '313' },
+      { ...base, date: iso(1), time: '12:00-14:50', type: 'ПЗ', subject: 'Бухгалтерский учет и анализ', teacher: 'Баклановская Д.И.', room: '302' },
+      { ...base, date: iso(3), time: '08:30-11:20', type: 'ПЗ', subject: 'Английский язык в профессиональной сфере', teacher: 'Щербакова В.С.', room: '212' },
+    ],
+  });
 
   await rm(DATA_DIR, { recursive: true, force: true });
   await mkdir(SCHEDULE_DIR, { recursive: true });

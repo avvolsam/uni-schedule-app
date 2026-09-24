@@ -2,14 +2,9 @@
 // the dataset the frontend consumes. Kept separate from fetch-schedule.mjs's I/O so
 // the whole pipeline can be exercised in tests with fixture data.
 
-import { parsePostToLessons } from './parseSchedule.mjs';
-import { groupCodeToFileSlug } from './groupSlug.mjs';
-
-function startTimeSortKey(time) {
-  const m = /^(\d{1,2}):(\d{2})/.exec(time || '');
-  if (!m) return 24 * 60;
-  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-}
+import { parsePostToLessons } from '../../shared/parseSchedule.mjs';
+import { groupCodeToFileSlug } from '../../shared/groupSlug.mjs';
+import { normalizeLessons } from '../../shared/normalizeLessons.mjs';
 
 function termsToRecords(terms) {
   return terms.map((t) => ({
@@ -131,6 +126,7 @@ export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
       courseIds: [...entry.courseIds],
       formIds: [...entry.formIds],
       monthIds: [...entry.monthIds],
+      postIds: [...entry.postIds],
       fileSlug: groupCodeToFileSlug(groupCode),
     };
   }
@@ -147,11 +143,11 @@ export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
   const scheduleFiles = new Map(); // fileSlug -> { groupCode, lessons, generatedAt }
   const generatedAt = new Date().toISOString();
   for (const [groupCode, lessons] of lessonsByGroup) {
-    lessons.sort((a, b) => {
-      if (a.date !== b.date) return (a.date || '').localeCompare(b.date || '');
-      return startTimeSortKey(a.time) - startTimeSortKey(b.time);
+    scheduleFiles.set(groupCodeToFileSlug(groupCode), {
+      groupCode,
+      lessons: normalizeLessons(lessons),
+      generatedAt,
     });
-    scheduleFiles.set(groupCodeToFileSlug(groupCode), { groupCode, lessons, generatedAt });
   }
 
   const metaJson = {

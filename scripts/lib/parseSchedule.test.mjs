@@ -5,7 +5,7 @@ import {
   extractGroupCodesFromPost,
   parsePostToLessons,
   resolveAcademicDate,
-} from './parseSchedule.mjs';
+} from '../../shared/parseSchedule.mjs';
 import {
   SEMESTER_TABLE_SUBSET,
   GIA_SINGLE_GROUP_TABLE,

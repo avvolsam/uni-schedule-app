@@ -2,17 +2,15 @@ name: Update schedule and deploy
 
 on:
   schedule:
-    # 03:00 UTC = 06:00 Europe/Moscow. Runs even if nothing changed on the site —
-    # that's the point, since RANEPA can update the schedule at any unpredictable time.
-    - cron: '0 3 * * *'
+    # Every hour, on the hour. This includes 03:00 UTC = 06:00 Europe/Moscow. GitHub runs
+    # scheduled jobs on a best-effort basis, so a run can start 5-30 minutes late.
+    - cron: '0 * * * *'
   workflow_dispatch: {} # lets you trigger a refresh manually from the Actions tab
   push:
     branches: [main]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# No permissions by default; each job asks only for what it needs.
+permissions: {}
 
 concurrency:
   group: pages
@@ -21,6 +19,13 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # read the repository
+      pages: write # publish to GitHub Pages
+      id-token: write # lets GitHub Pages verify the deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,10 +41,36 @@ jobs:
       - name: Fetch latest schedule data from spb.ranepa.ru
         run: npm run fetch-data
 
+      # The snapshot of the previous run lets us see what changed since then.
+      - name: Restore previous schedule snapshot
+        uses: actions/cache/restore@v4
+        with:
+          path: .baseline
+          key: schedule-baseline-${{ github.run_id }}
+          restore-keys: schedule-baseline-
+
+      # The OneSignal API key is a secret. It is handed to this one step only (not to the
+      # build, not to the whole job) and is never printed.
+      - name: Send push notifications for changed groups
+        continue-on-error: true
+        run: node scripts/notify-changes.mjs
+        env:
+          ONESIGNAL_APP_ID: ${{ vars.ONESIGNAL_APP_ID }}
+          ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
+          SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+
+      - name: Save schedule snapshot
+        uses: actions/cache/save@v4
+        with:
+          path: .baseline
+          key: schedule-baseline-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Build site
         run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # Public identifier (visible to every visitor by design), not a secret.
+          VITE_ONESIGNAL_APP_ID: ${{ vars.ONESIGNAL_APP_ID }}
 
       - uses: actions/configure-pages@v5
 
@@ -49,3 +80,18 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # GitHub pauses scheduled workflows in a public repository after 60 days without
+  # repository activity. Re-enabling the workflow on every scheduled run keeps the hourly
+  # updates from silently stopping. Kept as its own job so only it holds `actions: write`.
+  keep-schedule-enabled:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Keep the schedule trigger enabled
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/enable"
