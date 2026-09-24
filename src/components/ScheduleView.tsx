@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { formatClock, formatDateTime, formatDayLabel, todayIso } from '../format';
+import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { addDays } from '../../shared/dates.mjs';
+import { formatClock, formatDateTime, formatDayLabel, formatShortDate, todayIso } from '../format';
 import {
   autoLiveRefresh,
   dismissChanges,
@@ -11,6 +12,7 @@ import {
 import type { Lesson, SavedSelection } from '../types';
 import ChangesBanner from './ChangesBanner';
 import NotificationsPanel from './NotificationsPanel';
+import WeekCalendar from './WeekCalendar';
 
 interface Props {
   selection: SavedSelection;
@@ -22,14 +24,24 @@ interface Status {
   text: string;
 }
 
-function groupByDate(lessons: Lesson[]): [string, Lesson[]][] {
-  const map = new Map<string, Lesson[]>();
-  for (const lesson of lessons) {
-    const key = lesson.date || 'Без даты';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(lesson);
-  }
-  return [...map.entries()];
+const SWIPE_MIN_DISTANCE = 60;
+
+function LessonCard({ lesson }: { lesson: Lesson }) {
+  return (
+    <li className="lesson">
+      <div className="lesson-time">{lesson.time || '—'}</div>
+      <div className="lesson-body">
+        <div className="lesson-subject">
+          {lesson.subject}
+          {lesson.type && <span className="lesson-type"> · {lesson.type}</span>}
+        </div>
+        <div className="lesson-meta">
+          {[lesson.position, lesson.teacher].filter(Boolean).join(' ')}
+          {lesson.room && <span className="lesson-room"> · ауд. {lesson.room}</span>}
+        </div>
+      </div>
+    </li>
+  );
 }
 
 export default function ScheduleView({ selection, onChangeGroup }: Props) {
@@ -38,6 +50,27 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // The app always opens on today.
+  const [today, setToday] = useState(todayIso);
+  const [selected, setSelected] = useState(today);
+  const todayRef = useRef(today);
+
+  // A phone app can sit in the background for days. When it comes back on a new calendar
+  // day, jump to the new "today" instead of leaving yesterday on screen.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return;
+      const now = todayIso();
+      if (now !== todayRef.current) {
+        todayRef.current = now;
+        setToday(now);
+        setSelected(now);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   // On open: show whatever is saved on the phone instantly (state initialiser above),
   // then fetch the app's latest published data, then — if it's been a while — ask the
@@ -86,11 +119,40 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
   const { stored, changes } = state;
 
-  const days = useMemo(() => {
-    if (!stored) return [];
-    const today = todayIso();
-    return groupByDate(stored.lessons.filter((l) => !l.date || l.date >= today));
+  const { byDate, sortedDates, undated } = useMemo(() => {
+    const map = new Map<string, Lesson[]>();
+    const noDate: Lesson[] = [];
+    for (const lesson of stored?.lessons ?? []) {
+      if (!lesson.date) {
+        noDate.push(lesson);
+        continue;
+      }
+      if (!map.has(lesson.date)) map.set(lesson.date, []);
+      map.get(lesson.date)!.push(lesson);
+    }
+    return { byDate: map, sortedDates: [...map.keys()].sort(), undated: noDate };
   }, [stored]);
+
+  const markedDates = useMemo(() => new Set(sortedDates), [sortedDates]);
+  const dayLessons = byDate.get(selected) ?? [];
+  const nextLessonDate = sortedDates.find((d) => d > selected);
+
+  // Swiping the lessons area left/right moves one day forward/back.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  function onTouchStart(e: TouchEvent) {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+  function onTouchEnd(e: TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    setSelected((cur) => addDays(cur, dx < 0 ? 1 : -1));
+  }
 
   return (
     <div className="schedule">
@@ -129,8 +191,6 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
       <ChangesBanner changes={changes} onDismiss={() => setState(dismissChanges(group))} />
 
-      <NotificationsPanel groupCode={group} />
-
       {!stored && loadError && (
         <div className="error-box">
           <p className="error">Не удалось загрузить расписание: {loadError}</p>
@@ -139,30 +199,50 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
       )}
       {!stored && !loadError && <p>Загрузка расписания…</p>}
 
-      {stored && days.length === 0 && <p className="hint">Ближайших занятий не найдено.</p>}
+      {stored && (
+        <>
+          <WeekCalendar
+            selected={selected}
+            today={today}
+            markedDates={markedDates}
+            onSelect={setSelected}
+          />
 
-      {days.map(([date, dayLessons]) => (
-        <section key={date} className="day">
-          <h2>{date === 'Без даты' ? date : formatDayLabel(date)}</h2>
-          <ul className="lessons">
-            {dayLessons.map((lesson, i) => (
-              <li key={i} className="lesson">
-                <div className="lesson-time">{lesson.time || '—'}</div>
-                <div className="lesson-body">
-                  <div className="lesson-subject">
-                    {lesson.subject}
-                    {lesson.type && <span className="lesson-type"> · {lesson.type}</span>}
-                  </div>
-                  <div className="lesson-meta">
-                    {[lesson.position, lesson.teacher].filter(Boolean).join(' ')}
-                    {lesson.room && <span className="lesson-room"> · ауд. {lesson.room}</span>}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+          <div className="day-view" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+            <h2 className="day-heading">{formatDayLabel(selected)}</h2>
+
+            {dayLessons.length > 0 ? (
+              <ul className="lessons">
+                {dayLessons.map((lesson, i) => (
+                  <LessonCard key={i} lesson={lesson} />
+                ))}
+              </ul>
+            ) : (
+              <div className="empty-day">
+                <p>В этот день занятий нет.</p>
+                {nextLessonDate && (
+                  <button className="link-button" onClick={() => setSelected(nextLessonDate)}>
+                    Ближайшее занятие — {formatShortDate(nextLessonDate)}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {undated.length > 0 && (
+            <details className="undated">
+              <summary>Занятия без даты ({undated.length})</summary>
+              <ul className="lessons">
+                {undated.map((lesson, i) => (
+                  <LessonCard key={i} lesson={lesson} />
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+
+      <NotificationsPanel groupCode={group} />
 
       <p className="footer-note">
         Неофициальное приложение, не связано с РАНХиГС. Данные берутся с открытого сайта

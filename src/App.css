@@ -307,3 +307,151 @@ h1 {
   margin: 32px 0 0;
   text-align: center;
 }
+
+/* ---- calendar ---- */
+
+.calendar {
+  margin: 0 0 12px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.calendar-month {
+  flex: 1;
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 0;
+}
+
+.nav-button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.date-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.today-pill {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.day-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 6px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--card);
+  color: var(--text);
+}
+
+.day-button .dow {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.day-button .dnum {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-button .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.day-button .dot.on {
+  background: var(--accent);
+}
+
+.day-button.today {
+  border-color: var(--accent);
+}
+
+.day-button.selected {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.day-button.selected .dow {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.day-button.selected .dot.on {
+  background: #ffffff;
+}
+
+.day-view {
+  min-height: 35vh;
+  margin-bottom: 20px;
+}
+
+.day-heading {
+  font-size: 1rem;
+  color: var(--muted);
+  margin: 12px 0 10px;
+}
+
+.empty-day {
+  color: var(--muted);
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.empty-day p {
+  margin: 0 0 8px;
+}
+
+.undated {
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.undated summary {
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 8px;
+}

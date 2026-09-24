@@ -23,7 +23,19 @@ export function formatDayLabel(iso: string): string {
   const dateStr = `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}, ${WEEKDAY_NAMES[d.getDay()]}`;
   if (diffDays === 0) return `Сегодня, ${dateStr}`;
   if (diffDays === 1) return `Завтра, ${dateStr}`;
+  if (diffDays === -1) return `Вчера, ${dateStr}`;
   return dateStr;
+}
+
+const MONTHS_NOMINATIVE = [
+  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+];
+
+/** "сентябрь 2026" */
+export function formatMonthYear(iso: string): string {
+  const [y, m] = iso.split('-').map(Number);
+  return `${MONTHS_NOMINATIVE[m - 1]} ${y}`;
 }
 
 export function formatShortDate(iso: string | null): string {

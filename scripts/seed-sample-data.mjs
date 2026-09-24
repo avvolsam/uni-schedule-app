@@ -90,9 +90,13 @@ async function main() {
     groupCode: 'ЭК-3-24-03',
     generatedAt: new Date().toISOString(),
     lessons: [
+      { ...base, date: iso(-9), time: '08:30-11:20', type: 'Л', subject: 'Управленческий учет', teacher: 'Липатова Л.Н.', room: 'СДО РАНХиГС' },
+      { ...base, date: iso(-2), time: '12:00-14:50', type: 'ПЗ', subject: 'Экономика предприятий и организаций', teacher: 'Котелкин Ю.В.', room: '313' },
+      { ...base, date: iso(0), time: '08:30-11:20', type: 'Л', subject: 'Цифровое общество и управление цифровой репутацией', teacher: 'Державин С.А.', room: '317' },
       { ...base, date: iso(1), time: '08:30-11:20', type: 'Л', subject: 'Маркетинг', teacher: 'Минаев Д.В.', room: '313' },
       { ...base, date: iso(1), time: '12:00-14:50', type: 'ПЗ', subject: 'Бухгалтерский учет и анализ', teacher: 'Баклановская Д.И.', room: '302' },
       { ...base, date: iso(3), time: '08:30-11:20', type: 'ПЗ', subject: 'Английский язык в профессиональной сфере', teacher: 'Щербакова В.С.', room: '212' },
+      { ...base, date: iso(9), time: '12:00-14:50', type: 'ПЗ', subject: 'Маркетинг', teacher: 'Минаев Д.В.', room: '311' },
     ],
   });
 
