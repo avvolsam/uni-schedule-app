@@ -1,0 +1,51 @@
+name: Update schedule and deploy
+
+on:
+  schedule:
+    # 03:00 UTC = 06:00 Europe/Moscow. Runs even if nothing changed on the site —
+    # that's the point, since RANEPA can update the schedule at any unpredictable time.
+    - cron: '0 3 * * *'
+  workflow_dispatch: {} # lets you trigger a refresh manually from the Actions tab
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Fetch latest schedule data from spb.ranepa.ru
+        run: npm run fetch-data
+
+      - name: Build site
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
