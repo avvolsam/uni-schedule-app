@@ -19,6 +19,7 @@ interface OneSignalApi {
     serviceWorkerPath: string;
     serviceWorkerParam: { scope: string };
     allowLocalhostAsSecureOrigin?: boolean;
+    promptOptions?: { slidedown: { prompts: { type: 'push'; autoPrompt: boolean }[] } };
   }): Promise<void>;
   Notifications: { requestPermission(): Promise<unknown> };
   User: {
@@ -77,6 +78,9 @@ function loadSdk(): Promise<OneSignalApi> {
           serviceWorkerPath: `${BASE}push/OneSignalSDKWorker.js`,
           serviceWorkerParam: { scope: `${BASE}push/` },
           allowLocalhostAsSecureOrigin: import.meta.env.DEV,
+          // The dashboard requires at least one prompt to exist; this makes sure it never
+          // pops up by itself. The permission dialog only ever appears on our button.
+          promptOptions: { slidedown: { prompts: [{ type: 'push', autoPrompt: false }] } },
         });
         clearTimeout(timer);
         resolve(OneSignal);
