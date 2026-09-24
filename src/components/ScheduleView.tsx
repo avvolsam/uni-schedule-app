@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { pickCheer } from '../../shared/cheers.mjs';
 import { addDays } from '../../shared/dates.mjs';
 import { formatClock, formatDateTime, formatDayLabel, formatShortDate, todayIso } from '../format';
 import {
@@ -227,6 +228,8 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
                 )}
               </div>
             )}
+
+            <p className="cheer">{pickCheer(selected, dayLessons.length > 0)}</p>
           </div>
 
           {undated.length > 0 && (

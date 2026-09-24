@@ -455,3 +455,21 @@ h1 {
   cursor: pointer;
   margin-bottom: 8px;
 }
+
+/* ---- friendly line at the bottom of the day ---- */
+
+.day-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.cheer {
+  margin: auto auto 0;
+  padding-top: 28px;
+  max-width: 28ch;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  font-style: italic;
+}
