@@ -473,3 +473,66 @@ h1 {
   line-height: 1.4;
   font-style: italic;
 }
+
+/* ---- sub-groups, clashes, empty groups ---- */
+
+.subgroup-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.clash-note {
+  margin: -4px 0 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+  font-size: 0.8rem;
+}
+
+.no-schedule {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ---- sub-group filter ---- */
+
+.subgroup-filter {
+  margin: 0 0 12px;
+}
+
+.filter-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.chip {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}

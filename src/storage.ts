@@ -1,9 +1,13 @@
 import type { PendingChange, SavedSelection, StoredSchedule } from './types';
 
 const SELECTION_KEY = 'uni-schedule:selection';
-const storedKey = (group: string) => `uni-schedule:stored:${group}`;
-const changesKey = (group: string) => `uni-schedule:changes:${group}`;
-const liveCheckKey = (group: string) => `uni-schedule:live-check:${group}`;
+// Bumped when the schedule data format changes (v2: real group codes, sub-groups, fixed
+// dates). Copies saved by an older version are simply never read, so students don't get a
+// bogus "your schedule changed" banner comparing old-format data with the new.
+const DATA_VERSION = 'v2';
+const storedKey = (group: string) => `uni-schedule:${DATA_VERSION}:stored:${group}`;
+const changesKey = (group: string) => `uni-schedule:${DATA_VERSION}:changes:${group}`;
+const liveCheckKey = (group: string) => `uni-schedule:${DATA_VERSION}:live-check:${group}`;
 
 function readJson<T>(key: string): T | null {
   try {
@@ -46,6 +50,11 @@ export const saveStored = (group: string, s: StoredSchedule) => writeJson(stored
 export const loadChanges = (group: string) => readJson<PendingChange[]>(changesKey(group)) ?? [];
 export const saveChanges = (group: string, c: PendingChange[]) => writeJson(changesKey(group), c);
 export const clearChanges = (group: string) => remove(changesKey(group));
+
+const subgroupKey = (group: string) => `uni-schedule:${DATA_VERSION}:subgroup:${group}`;
+export const loadSubgroup = (group: string): string | null => readJson<string>(subgroupKey(group));
+export const saveSubgroup = (group: string, value: string | null) =>
+  value ? writeJson(subgroupKey(group), value) : remove(subgroupKey(group));
 
 export const loadLiveCheckTime = (group: string): number => {
   const raw = readJson<number>(liveCheckKey(group));

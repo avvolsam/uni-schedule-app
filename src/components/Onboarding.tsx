@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { addDays } from '../../shared/dates.mjs';
 import { fetchDirections, fetchGroups, fetchTaxonomies } from '../api';
+import { todayIso } from '../format';
 import type { Direction, GroupsIndex, SavedSelection, Taxonomies } from '../types';
 
 interface Props {
@@ -7,6 +9,8 @@ interface Props {
 }
 
 type Step = 'direction' | 'refine' | 'group';
+
+const ARCHIVE_AFTER_DAYS = 45;
 
 function useAsyncData() {
   const [directions, setDirections] = useState<Direction[] | null>(null);
@@ -41,12 +45,27 @@ export default function Onboarding({ onSelect }: Props) {
   const [direction, setDirection] = useState<Direction | null>(null);
   const [courseId, setCourseId] = useState<number | null>(null);
 
+  // Groups that finished studying long ago still have their old posts on the site; don't
+  // offer them. A group with no lessons at all is kept (its schedule may simply not be
+  // published yet) and marked as such.
+  const visibleDirections = useMemo(() => {
+    if (!directions || !groups) return [];
+    const cutoff = addDays(todayIso(), -ARCHIVE_AFTER_DAYS);
+    const isCurrent = (code: string) => {
+      const info = groups[code];
+      if (!info) return false;
+      return info.lessonCount === 0 || !info.lastLessonDate || info.lastLessonDate >= cutoff;
+    };
+    return directions
+      .map((d) => ({ ...d, groupCodes: d.groupCodes.filter(isCurrent).sort((a, b) => a.localeCompare(b, 'ru')) }))
+      .filter((d) => d.groupCodes.length > 0);
+  }, [directions, groups]);
+
   const filteredDirections = useMemo(() => {
-    if (!directions) return [];
     const q = query.trim().toLowerCase();
-    if (!q) return directions;
-    return directions.filter((d) => d.breadcrumb.toLowerCase().includes(q));
-  }, [directions, query]);
+    if (!q) return visibleDirections;
+    return visibleDirections.filter((d) => d.breadcrumb.toLowerCase().includes(q));
+  }, [visibleDirections, query]);
 
   const courseOptions = useMemo(() => {
     if (!direction || !groups || !taxonomies) return [];
@@ -164,7 +183,12 @@ export default function Onboarding({ onSelect }: Props) {
           <ul className="list">
             {groupCandidates.map((code) => (
               <li key={code}>
-                <button onClick={() => confirmGroup(code)}>{code}</button>
+                <button onClick={() => confirmGroup(code)}>
+                  {code}
+                  {groups[code]?.lessonCount === 0 && (
+                    <span className="no-schedule"> · расписание пока не опубликовано</span>
+                  )}
+                </button>
               </li>
             ))}
             {groupCandidates.length === 0 && (

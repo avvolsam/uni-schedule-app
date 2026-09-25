@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { pickCheer } from '../../shared/cheers.mjs';
 import { addDays } from '../../shared/dates.mjs';
-import { formatClock, formatDateTime, formatDayLabel, formatShortDate, todayIso } from '../format';
+import {
+  formatClock,
+  formatDateTime,
+  formatDayLabel,
+  formatShortDate,
+  formatSubgroup,
+  hasTimeClash,
+  todayIso,
+} from '../format';
 import {
   autoLiveRefresh,
   dismissChanges,
@@ -10,6 +18,7 @@ import {
   refreshNow,
   type ScheduleState,
 } from '../schedule';
+import { loadSubgroup, saveSubgroup } from '../storage';
 import type { Lesson, SavedSelection } from '../types';
 import ChangesBanner from './ChangesBanner';
 import NotificationsPanel from './NotificationsPanel';
@@ -40,6 +49,7 @@ function LessonCard({ lesson }: { lesson: Lesson }) {
           {[lesson.position, lesson.teacher].filter(Boolean).join(' ')}
           {lesson.room && <span className="lesson-room"> · ауд. {lesson.room}</span>}
         </div>
+        {lesson.subgroup && <span className="subgroup-tag">{formatSubgroup(lesson.subgroup)}</span>}
       </div>
     </li>
   );
@@ -120,19 +130,34 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
   const { stored, changes } = state;
 
-  const { byDate, sortedDates, undated } = useMemo(() => {
+  // A group can be split into sub-groups (languages, A/B halves). The student picks theirs
+  // once; lessons for the whole group are always shown, other sub-groups' lessons are hidden.
+  const [chosenSubgroup, setChosenSubgroup] = useState<string | null>(() => loadSubgroup(group));
+  const subgroups = useMemo(
+    () =>
+      [...new Set((stored?.lessons ?? []).map((l) => l.subgroup).filter((s): s is string => Boolean(s)))].sort(
+        (a, b) => a.localeCompare(b, 'ru', { numeric: true })
+      ),
+    [stored]
+  );
+  const activeSubgroup = chosenSubgroup && subgroups.includes(chosenSubgroup) ? chosenSubgroup : null;
+  const visibleLessons = useMemo(
+    () => (stored?.lessons ?? []).filter((l) => !activeSubgroup || !l.subgroup || l.subgroup === activeSubgroup),
+    [stored, activeSubgroup]
+  );
+  function chooseSubgroup(value: string | null) {
+    setChosenSubgroup(value);
+    saveSubgroup(group, value);
+  }
+
+  const { byDate, sortedDates } = useMemo(() => {
     const map = new Map<string, Lesson[]>();
-    const noDate: Lesson[] = [];
-    for (const lesson of stored?.lessons ?? []) {
-      if (!lesson.date) {
-        noDate.push(lesson);
-        continue;
-      }
+    for (const lesson of visibleLessons) {
       if (!map.has(lesson.date)) map.set(lesson.date, []);
       map.get(lesson.date)!.push(lesson);
     }
-    return { byDate: map, sortedDates: [...map.keys()].sort(), undated: noDate };
-  }, [stored]);
+    return { byDate: map, sortedDates: [...map.keys()].sort() };
+  }, [visibleLessons]);
 
   const markedDates = useMemo(() => new Set(sortedDates), [sortedDates]);
   const dayLessons = byDate.get(selected) ?? [];
@@ -192,7 +217,18 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
       <ChangesBanner changes={changes} onDismiss={() => setState(dismissChanges(group))} />
 
-      {!stored && loadError && (
+      {!stored && loadError && /404/.test(loadError) && (
+        <div className="error-box">
+          <p className="error">Такой группы больше нет в списке.</p>
+          <p className="hint">
+            Данные на сайте обновились, и коды групп изменились. Выберите свою группу заново.
+          </p>
+          <button className="primary-button" onClick={onChangeGroup}>
+            Выбрать группу
+          </button>
+        </div>
+      )}
+      {!stored && loadError && !/404/.test(loadError) && (
         <div className="error-box">
           <p className="error">Не удалось загрузить расписание: {loadError}</p>
           <p className="hint">Проверьте интернет и нажмите ↻.</p>
@@ -200,8 +236,35 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
       )}
       {!stored && !loadError && <p>Загрузка расписания…</p>}
 
-      {stored && (
+      {stored && stored.lessons.length === 0 && (
+        <div className="empty-day">
+          <p>Для этой группы на сайте РАНХиГС расписание пока не опубликовано.</p>
+          <p className="hint">Как только оно появится, занятия покажутся здесь. Нажмите ↻, чтобы проверить сейчас.</p>
+        </div>
+      )}
+
+      {stored && stored.lessons.length > 0 && (
         <>
+          {subgroups.length >= 2 && (
+            <div className="subgroup-filter">
+              <span className="filter-label">Моя подгруппа:</span>
+              <div className="chips">
+                <button className={activeSubgroup ? 'chip' : 'chip on'} onClick={() => chooseSubgroup(null)}>
+                  Все
+                </button>
+                {subgroups.map((s) => (
+                  <button
+                    key={s}
+                    className={activeSubgroup === s ? 'chip on' : 'chip'}
+                    onClick={() => chooseSubgroup(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <WeekCalendar
             selected={selected}
             today={today}
@@ -211,6 +274,12 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
           <div className="day-view" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <h2 className="day-heading">{formatDayLabel(selected)}</h2>
+
+            {hasTimeClash(dayLessons) && (
+              <p className="clash-note">
+                В расписании на сайте на одно время указано несколько занятий — так у них написано.
+              </p>
+            )}
 
             {dayLessons.length > 0 ? (
               <ul className="lessons">
@@ -231,17 +300,6 @@ export default function ScheduleView({ selection, onChangeGroup }: Props) {
 
             <p className="cheer">{pickCheer(selected, dayLessons.length > 0)}</p>
           </div>
-
-          {undated.length > 0 && (
-            <details className="undated">
-              <summary>Занятия без даты ({undated.length})</summary>
-              <ul className="lessons">
-                {undated.map((lesson, i) => (
-                  <LessonCard key={i} lesson={lesson} />
-                ))}
-              </ul>
-            </details>
-          )}
         </>
       )}
 

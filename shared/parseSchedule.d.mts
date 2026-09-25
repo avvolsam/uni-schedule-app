@@ -1,7 +1,7 @@
 export interface ParsedLesson {
   groupCode: string;
-  date: string | null;
-  dayOfWeek: string | null;
+  subgroup: string | null;
+  date: string;
   time: string | null;
   type: string | null;
   subject: string | null;
@@ -10,7 +10,23 @@ export interface ParsedLesson {
   room: string | null;
 }
 
-export function parsePostToLessons(
-  postContentHtml: string,
-  referenceDate?: Date
-): { groupCodes: string[]; lessons: ParsedLesson[] };
+export type PostStatus = 'ok' | 'no-table' | 'no-schedule-table' | 'retake';
+
+export interface ParsedPost {
+  status: PostStatus;
+  groupCodes: string[];
+  /** Groups named in the post title (the post's own groups, as opposed to guests in joint rows). */
+  titleGroupCodes: string[];
+  lessons: ParsedLesson[];
+  rowsWithoutDate: number;
+  datesRepaired: number;
+  datesUnexplained: number;
+  unrecognised: string[][];
+}
+
+export function classifyHeader(text: string): string | null;
+
+export function parsePost(
+  post: { html: string; title?: string; modified?: string },
+  options?: { now?: Date; onRepair?: (info: unknown) => void }
+): ParsedPost;

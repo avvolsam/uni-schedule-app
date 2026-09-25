@@ -14,7 +14,7 @@ export function normalizeLessons(lessons) {
   const unique = [];
   for (const l of lessons) {
     const key = JSON.stringify([
-      l.groupCode, l.date, l.time, l.type, l.subject, l.position, l.teacher, l.room,
+      l.groupCode, l.subgroup, l.date, l.time, l.type, l.subject, l.position, l.teacher, l.room,
     ]);
     if (seen.has(key)) continue;
     seen.add(key);

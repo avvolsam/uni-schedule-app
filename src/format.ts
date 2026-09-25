@@ -44,6 +44,24 @@ export function formatShortDate(iso: string | null): string {
   return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
 }
 
+/** "1исп" -> "подгруппа 1исп"; "гр. А" is already worded, so it stays as is. */
+export function formatSubgroup(subgroup: string): string {
+  return /^гр/i.test(subgroup) ? subgroup : `подгруппа ${subgroup}`;
+}
+
+/** True if two different lessons start at the same time for the same sub-group. */
+export function hasTimeClash(lessons: Lesson[]): boolean {
+  const seen = new Map<string, string | null>();
+  for (const l of lessons) {
+    const start = l.time?.split('-')[0];
+    if (!start) continue;
+    const key = `${start}|${l.subgroup ?? ''}`;
+    if (seen.has(key) && seen.get(key) !== l.subject) return true;
+    seen.set(key, l.subject);
+  }
+  return false;
+}
+
 /** "5 октября, 08:30 — Маркетинг" */
 export function formatLessonShort(l: Lesson): string {
   const time = l.time ? l.time.split('-')[0] : '';

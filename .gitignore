@@ -34,3 +34,6 @@ public/data
 
 # Previous-run schedule snapshot used by scripts/notify-changes.mjs (CI cache only).
 .baseline
+
+# Local data-analysis scratch files, never committed.
+.analysis

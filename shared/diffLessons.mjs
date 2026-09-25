@@ -14,7 +14,7 @@ function startTime(time) {
 }
 
 function lessonKey(l) {
-  return `${l.date}|${startTime(l.time)}|${(l.subject || '').trim()}`;
+  return `${l.date}|${startTime(l.time)}|${(l.subject || '').trim()}|${l.subgroup || ''}`;
 }
 
 function groupByKey(lessons) {

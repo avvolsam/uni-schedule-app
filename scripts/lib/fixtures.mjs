@@ -1,71 +1,64 @@
-// Fixtures captured verbatim (subsets, for the big one) from the real RANEPA SPb site,
-// pasted by the user during development. Used to unit-test the parser without needing
-// live network access to spb.ranepa.ru.
-
-// Subset of the ЭК-3-24-03/04 semester table (id 8739): shared lectures ("...-03-04")
-// plus subgroup-only practicals ("...-03" / "...-04"), spanning Sep 2-14.
-export const SEMESTER_TABLE_SUBSET = `
-<table id="tablepress-8739" class="tablepress tablepress-id-8739">
-<thead>
-<tr class="row-1 odd">
-	<th class="column-1">День</th><th class="column-2">Дата</th><th class="column-3">Месяц</th><th class="column-4">Время</th><th class="column-5">Группы</th><th class="column-6">Тип</th><th class="column-7">Предмет</th><th class="column-8">Должность</th><th class="column-9">Преподаватель</th><th class="column-10">Аудитория</th>
-</tr>
-</thead>
-<tbody class="row-hover">
-<tr class="row-2 even">
-	<td class="column-1">Ср.</td><td class="column-2">02</td><td class="column-3">09</td><td class="column-4">08:30-11:20</td><td class="column-5">ЭК-3-24-03-04</td><td class="column-6">Л</td><td class="column-7">Цифровое общество и управление цифровой репутацией</td><td class="column-8"><em>доц.</em></td><td class="column-9"><em>Державин С.А.</em></td><td class="column-10">304</td>
-</tr>
-<tr class="row-3 odd">
-	<td class="column-1">Чт.</td><td class="column-2">03</td><td class="column-3">09</td><td class="column-4">08:30-11:20</td><td class="column-5">ЭК-3-24-04</td><td class="column-6">ПЗ</td><td class="column-7">Английский язык в профессиональной сфере</td><td class="column-8"><em>ст. преп.</em></td><td class="column-9"><em>Каримова К.С.</em></td><td class="column-10">312</td>
-</tr>
-<tr class="row-4 even">
-	<td class="column-1">Чт.</td><td class="column-2">03</td><td class="column-3">09</td><td class="column-4">08:30-11:20</td><td class="column-5">ЭК-3-24-03</td><td class="column-6">ПЗ</td><td class="column-7">Английский язык в профессиональной сфере</td><td class="column-8"><em>ст. преп.</em></td><td class="column-9"><em>Щербакова В.С.</em></td><td class="column-10">216</td>
-</tr>
-<tr class="row-5 odd">
-	<td class="column-1">Пт.</td><td class="column-2">04</td><td class="column-3">09</td><td class="column-4">15:00-17:50</td><td class="column-5">ЭК-3-24-03</td><td class="column-6">ПЗ</td><td class="column-7">Элективные курсы по физической культуре: Легкая атлетика; Фитнес; Спортивные игры</td><td class="column-8"><em>преп.</em></td><td class="column-9"><em>Кучеренко Ю.О.</em></td><td class="column-10">Стадион/спортзал</td>
-</tr>
-<tr class="row-6 even">
-	<td class="column-1">Пт.</td><td class="column-2">04</td><td class="column-3">09</td><td class="column-4">15:00-17:50</td><td class="column-5">ЭК-3-24-04</td><td class="column-6">ПЗ</td><td class="column-7">Элективные курсы по физической культуре: Легкая атлетика; Фитнес; Спортивные игры</td><td class="column-8"><em>преп.</em></td><td class="column-9"><em>Минникаева Н.В./Хильченко А.Д. ..</em></td><td class="column-10">Стадион/спортзал</td>
-</tr>
-</tbody>
-</table>
-`;
-
-// Full content.rendered for post id 244572 ("ЭК-6-23-01 ГИА") from
-// GET /wp-json/wp/v2/raspisanie?per_page=2 — a single-group, single-row table with a
-// different column order/header wording than the semester table above.
-export const GIA_SINGLE_GROUP_TABLE = `
-<table id="tablepress-14998" class="tablepress tablepress-id-14998">
-<thead>
-<tr class="row-1 odd">
-	<th class="column-1">Дата</th><th class="column-2">Месяц</th><th class="column-3">День</th><th class="column-4">Время</th><th class="column-5">Группы</th><th class="column-6">ТипЗанятий</th><th class="column-7">Предмет</th><th class="column-8">Преподаватель</th><th class="column-9">Аудитория</th><th class="column-10"></th>
-</tr>
-</thead>
-<tbody class="row-hover">
-<tr class="row-2 even">
-	<td class="column-1">24</td><td class="column-2">9</td><td class="column-3">Чт.</td><td class="column-4">14:00</td><td class="column-5">ЭК-6-23-01</td><td class="column-6">ИА</td><td class="column-7">Оценка диссертации на предмет её соответствия критериям (ФЗ от 23.08.1996 г. № 127-ФЗ «О науке и государственной научно-технической политике»)</td><td class="column-8">Комиссия ..</td><td class="column-9">309</td><td class="column-10"></td>
-</tr>
-</tbody>
-</table>
-`;
-
-// Full content.rendered for post id 244538 ("ЭК-6-24-03 сессия") — two rows, single
-// group, standard header order, no "Должность" column (position embedded via <em> only
-// on the teacher cell in one row).
-export const SESSION_SINGLE_GROUP_TABLE = `
-<table id="tablepress-14997" class="tablepress tablepress-id-14997">
-<thead>
-<tr class="row-1 odd">
-	<th class="column-1">День</th><th class="column-2">Дата</th><th class="column-3">Месяц</th><th class="column-4">Время</th><th class="column-5">Группы</th><th class="column-6">Тип</th><th class="column-7">Предмет</th><th class="column-8">Должность</th><th class="column-9">Преподаватель</th><th class="column-10">Аудитория</th>
-</tr>
-</thead>
-<tbody class="row-hover">
-<tr class="row-2 even">
-	<td class="column-1">Пн.</td><td class="column-2">21</td><td class="column-3">09</td><td class="column-4">18:00-20:50</td><td class="column-5">ЭК-6-24-03</td><td class="column-6">К</td><td class="column-7">КОНСУЛЬТАЦИЯ: Кандидатский экзамен по специальной дисциплине в соответствии с темой диссертации на соискание учёной степени кандидата наук</td><td class="column-8"><em>проф.</em></td><td class="column-9"><em>Липатова Л.Н.</em></td><td class="column-10">СДО РАНХиГС</td>
-</tr>
-<tr class="row-3 odd">
-	<td class="column-1">Чт.</td><td class="column-2">24</td><td class="column-3">09</td><td class="column-4">13:00</td><td class="column-5">ЭК-6-24-03</td><td class="column-6">Э</td><td class="column-7">ЭКЗАМЕН: Кандидатский экзамен по специальной дисциплине в соответствии с темой диссертации на соискание учёной степени кандидата наук</td><td class="column-8"></td><td class="column-9"><em>Комиссия ..</em></td><td class="column-10">309</td>
-</tr>
-</tbody>
-</table>
-`;
+// Excerpts of real tables from spb.ranepa.ru (rows trimmed), used to test the parser.
+// Regenerated from a raw dump of the site; do not edit by hand.
+export const FIXTURES = {
+  "ekSemester": {
+    "postId": 106473,
+    "title": "ЭК-3-24-03/04 СЕМЕСТР",
+    "modified": "2026-09-15T15:22:47",
+    "html": "<table>\n<thead><tr><th>ДеньНедели</th><th>Дата</th><th>Месяц</th><th>Время</th><th>Группы</th><th>ТипЗанятий</th><th>Предмет</th><th>ДолжностьПреподавателя</th><th>Преподаватель</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>Ср.</td><td>02</td><td>09</td><td>08:30-11:20</td><td>ЭК-3-24-03-04</td><td>Л</td><td>Цифровое общество и управление цифровой репутацией</td><td>доц.</td><td>Державин С.А.</td><td>304</td></tr>\n<tr><td>Чт.</td><td>03</td><td>09</td><td>08:30-11:20</td><td>ЭК-3-24-04</td><td>ПЗ</td><td>Английский язык в профессиональной сфере</td><td>ст. преп.</td><td>Каримова К.С.</td><td>312</td></tr>\n<tr><td>Чт.</td><td>03</td><td>09</td><td>08:30-11:20</td><td>ЭК-3-24-03</td><td>ПЗ</td><td>Английский язык в профессиональной сфере</td><td>ст. преп.</td><td>Щербакова В.С.</td><td>216</td></tr>\n<tr><td>Пт.</td><td>04</td><td>09</td><td>15:00-17:50</td><td>ЭК-3-24-03</td><td>ПЗ</td><td>Элективные курсы по физической культуре: Легкая атлетика; Фитнес; Спортивные игры</td><td>преп.</td><td>Кучеренко Ю.О.</td><td>Стадион/спортзал</td></tr>\n<tr><td>Пт.</td><td>04</td><td>09</td><td>15:00-17:50</td><td>ЭК-3-24-04</td><td>ПЗ</td><td>Элективные курсы по физической культуре: Легкая атлетика; Фитнес; Спортивные игры</td><td>преп.</td><td>Минникаева Н.В./Хильченко А.Д. ..</td><td>Стадион/спортзал</td></tr>\n<tr><td>Вт.</td><td>08</td><td>09</td><td>08:30-11:20</td><td>ЭК-3-24-03-04</td><td>Л</td><td>Бухгалтерский учет и анализ</td><td>доц.</td><td>Баклановская Д.И.</td><td>317</td></tr>\n<tr><td>Пт.</td><td>30</td><td>10</td><td>15:00-17:50</td><td>ЭК-3-24-04</td><td>ПЗ</td><td>Элективные курсы по физической культуре: Легкая атлетика; Фитнес; Спортивные игры</td><td>преп.</td><td>Минникаева Н.В./Хильченко А.Д. ..</td><td>Стадион/спортзал</td></tr>\n<tr><td>Сб.</td><td>31</td><td>10</td><td>08:30-11:20</td><td>ЭК-3-24-03</td><td>ПЗ</td><td>Управленческий учет</td><td>проф.</td><td>Липатова Л.Н.</td><td>СДО РАНХиГС</td></tr>\n<tr><td>Сб.</td><td>31</td><td>10</td><td>12:00-14:50</td><td>ЭК-3-24-04</td><td>ПЗ</td><td>Управленческий учет</td><td>проф.</td><td>Липатова Л.Н.</td><td>СДО РАНХиГС</td></tr>\n<tr><td>Вт.</td><td>03</td><td>10</td><td>08:30-11:20</td><td>ЭК-3-24-03-04</td><td>Л</td><td>Бухгалтерский учет и анализ</td><td>доц.</td><td>Баклановская Д.И.</td><td>313</td></tr>\n<tr><td>Пн.</td><td>02</td><td>11</td><td>08:30-11:20</td><td>ЭК-3-24-04</td><td>ПЗ</td><td>Основы национальной безопасности</td><td>доц.</td><td>Пастухов А.Л.</td><td>0</td></tr>\n<tr><td>Пн.</td><td>02</td><td>11</td><td>08:30-11:20</td><td>ЭК-3-24-03</td><td>ПЗ</td><td>Экономика предприятий и организаций</td><td>доц.</td><td>Котелкин Ю.В.</td><td>0</td></tr>\n<tr><td>Сб.</td><td>03</td><td>10</td><td>08:30-11:20</td><td>ЭК-3-24-03-04</td><td>Л</td><td>Управленческий учет</td><td>проф.</td><td>Липатова Л.Н.</td><td>СДО РАНХиГС</td></tr>\n</tbody>\n</table>"
+  },
+  "weekdayAndDayColumns": {
+    "postId": 240033,
+    "title": "СН-6-24-02",
+    "modified": "2026-05-28T10:59:35",
+    "html": "<table>\n<thead><tr><th>День недели</th><th>День</th><th>Месяц</th><th>Время_xl</th><th>Группа</th><th>Тип</th><th>Дисциплина</th><th>Преподаватель</th><th>Ауд</th></tr></thead>\n<tbody>\n<tr><td>Ср</td><td>15</td><td>4</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Л</td><td>Социология управления</td><td>доц. Кашина М.А.</td><td>СДО</td></tr>\n<tr><td>Ср</td><td>22</td><td>4</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Л</td><td>Проблемы социального моделирования, социального прогнозирования, социального планирования и социального проектирования в условиях изменяющейся реальности</td><td>проф. Ветренко И.А.</td><td>СДО</td></tr>\n<tr><td>Чт</td><td>23</td><td>4</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Пз</td><td>Социология управления</td><td>доц. Кашина М.А.</td><td>СДО</td></tr>\n<tr><td>Ср</td><td>29</td><td>4</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Л</td><td>Социология управления</td><td>доц. Кашина М.А.</td><td>СДО</td></tr>\n<tr><td>Вт</td><td>5</td><td>5</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Пз</td><td>Социология управления</td><td>доц. Кашина М.А.</td><td>СДО</td></tr>\n<tr><td>Пн</td><td>11</td><td>5</td><td>18.50-22.00</td><td>СН-6-24-02</td><td>Л</td><td>Проблемы социального моделирования, социального прогнозирования, социального планирования и социального проектирования в условиях изменяющейся реальности</td><td>проф. Ветренко И.А.</td><td>СДО</td></tr>\n</tbody>\n</table>"
+  },
+  "fullDatesGmu": {
+    "postId": 242731,
+    "title": "Расписание занятий 1 курса очно-заочного бакалавриата ГМУ-3-26-21-23",
+    "modified": "2026-09-10T13:55:55",
+    "html": "<table>\n<thead><tr><th>Дата</th><th>День недели</th><th>Время</th><th>К/Ч</th><th>Группы</th><th>Тип</th><th>Предмет</th><th>Должность</th><th>Преподаватель</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>01.09.</td><td>вторник</td><td></td><td></td><td>ГМУ-3-26-21-23</td><td></td><td>Неделя первокурсника (01.09.2026-05.09.2026)</td><td></td><td></td><td></td></tr>\n<tr><td>01.09.</td><td>вторник</td><td>10:00-13:00</td><td></td><td>ГМУ-3-26-21-23</td><td></td><td>Торжественная церемония открытия учебного года.</td><td></td><td></td><td>Петропавловская крепость</td></tr>\n<tr><td>02.09.</td><td>среда</td><td>13:00</td><td></td><td>ГМУ-3-26-21-23</td><td></td><td>Открытая лекция «Опыт внедрения инструментов «бережливого управления в органах государственной власти»</td><td></td><td></td><td>622</td></tr>\n<tr><td>15.10.2026</td><td>четверг</td><td>18:30-21:20</td><td>4</td><td>ГМУ-3-26-21-23</td><td>Л</td><td>Русский язык и культура речи</td><td>доц.</td><td>Тарасова Е.Н.</td><td>СДО (Moodle)</td></tr>\n<tr><td>15.10.2026</td><td>четверг</td><td>18:30-21:20</td><td>4</td><td>ГМУ-3-26-23</td><td>П/З</td><td>История России</td><td>доц.</td><td>Карпов Е.В.</td><td>616</td></tr>\n</tbody>\n</table>"
+  },
+  "dotTimesCompact": {
+    "postId": 241852,
+    "title": "ТУР-4-26-11",
+    "modified": "2026-09-22T11:42:38",
+    "html": "<table>\n<thead><tr><th>Дата</th><th>Д/Н</th><th>Время</th><th>А/Ч</th><th>Группа</th><th>Тип занятия</th><th>Дисциплина</th><th>Преподаватель</th><th>Аудитория</th><th>Адрес</th></tr></thead>\n<tbody>\n<tr><td>05.10.2026</td><td>Пн</td><td>18.30-21.20</td><td>4</td><td>ТУР-4-26-11</td><td>Лекция</td><td>Проектное управление в деловом и событийном туризме / Project management in business and event tourism</td><td>Морозова Марина Александровна</td><td>СДО РАНХиГС</td><td></td></tr>\n<tr><td>06.10.2026</td><td>Вт</td><td>15.00-17.50</td><td>4</td><td>ТУР-4-26-11</td><td>Лекция</td><td>Методология и организация научно-прикладных исследований в сфере туризма / Methodology and organization of scientific and applied research in the fiel</td><td>Боголюбова Светлана Анатольевна</td><td>СДО РАНХиГС</td><td></td></tr>\n<tr><td>07.10.2026</td><td>Ср</td><td>18.30-21.20</td><td>4</td><td>ТУР-4-26-11</td><td>Практическое занятие</td><td>Деловой иностранный язык</td><td>Оськина Анна Николаевна</td><td>СДО РАНХиГС</td><td></td></tr>\n<tr><td>08.10.2026</td><td>Чт</td><td>18.30-21.20</td><td>4</td><td>ТУР-4-26-11</td><td>Лекция</td><td>Маркетинг делового и событийного туризма / Marketing of business and event tourism</td><td>Белякова Наталья Юрьевна</td><td>СДО РАНХиГС</td><td></td></tr>\n<tr><td>09.10.2026</td><td>Пт</td><td>15.00-17.50</td><td>4</td><td>ТУР-4-26-11</td><td>Лекция</td><td>Инновационные технологии в сфере делового и событийного туризма / Innovative technologies in the field of business and event tourism</td><td>Погорелов Николай Владимирович</td><td>308</td><td>Тучков пер., д.7</td></tr>\n<tr><td>10.10.2026</td><td>Сб</td><td>12.00-14.50</td><td>4</td><td>ТУР-4-26-11</td><td>Лекция</td><td>Современные PR-технологии делового и событийного туризма / Modern PR-technologies of business and event tourism</td><td>Погорелов Николай Владимирович</td><td>308</td><td>Тучков пер., д.7</td></tr>\n</tbody>\n</table>"
+  },
+  "blankDateHeader": {
+    "postId": 241827,
+    "title": "ГД-3-25-01",
+    "modified": "2026-08-28T19:51:31",
+    "html": "<table>\n<thead><tr><th></th><th>Д/Н</th><th>Время</th><th>А/Ч</th><th>Тип занятия</th><th>Группа</th><th>Дисциплина</th><th>Преподаватель</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>01.09.2026</td><td>Вт</td><td></td><td></td><td></td><td>ГД-3-25-01</td><td>День самостоятельной работы</td><td></td><td></td></tr>\n<tr><td>02.09.2026</td><td>Ср</td><td></td><td></td><td></td><td>ГД-3-25-01</td><td>День самостоятельной работы</td><td></td><td></td></tr>\n<tr><td>03.09.2026</td><td>Чт</td><td>12.00-12.20</td><td>2</td><td>Лекционные занятия</td><td>ГД-3-25-01</td><td>Философия</td><td>Карнаух Владимир Кузьмич</td><td>206, Тучков пер., д.7</td></tr>\n<tr><td>03.09.2026</td><td>Чт</td><td>13.30-14.50</td><td>2</td><td>Лекционные занятия</td><td>ГД-3-25-01</td><td>Философия</td><td>Карнаух Владимир Кузьмич</td><td>206, Тучков пер., д.7</td></tr>\n</tbody>\n</table>"
+  },
+  "retake": {
+    "postId": 233752,
+    "title": "Расписание повторной промежуточной аттестации 1 курса заочной магистратуры ГМУ-4-25-11-19",
+    "modified": "2026-05-06T10:57:13",
+    "html": "<table>\n<thead><tr><th>Дисциплина</th><th>Курс</th><th>Группа</th><th>Семестр (долга)</th><th>Преподаватель</th><th>Дата</th><th>Время</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>ЗАЧЕТ: Правовое обеспечение государственного и муниципального управления</td><td>1</td><td>ГМУ-4-25-19</td><td>1</td><td>Шеина А.Ю.</td><td>5/18/2026</td><td>10:30</td><td>212</td></tr>\n<tr><td>ЗАЧЕТ: Деловые коммуникации в профессиональной сфере</td><td>1</td><td>ГМУ-4-25-19</td><td>1</td><td>Шеина А.Ю.</td><td>5/18/2026</td><td>10:30</td><td>212</td></tr>\n<tr><td>ЗАЧЕТ: Деловые коммуникации в профессиональной сфере</td><td>1</td><td>ГМУ-4-25-11-18</td><td>1</td><td>Дзгоева Д.Т.</td><td>5/18/2026</td><td>12:00</td><td>СДО (Moodle)</td></tr>\n</tbody>\n</table>"
+  },
+  "emptyHeader": {
+    "postId": 242570,
+    "title": "Таможенное дело: гр. ТД-5-22-05/06 (ГИА)",
+    "modified": "2026-08-31T09:12:52",
+    "html": "<table>\n<thead><tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead>\n<tbody>\n<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>\n<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>\n</tbody>\n</table>"
+  },
+  "subgroups": {
+    "postId": 241825,
+    "title": "ЛИН-3-23-01-04",
+    "modified": "2026-08-29T15:57:23",
+    "html": "<table>\n<thead><tr><th>День недели</th><th>Дата</th><th>Время</th><th>А/Ч</th><th>Группа</th><th>Тип занятий</th><th>Наименование дисциплины</th><th>Преподаватель</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>Вт</td><td>01.09.2026</td><td>12:00-14:50</td><td>4</td><td>ЛИН-3-23-01-04/1исп</td><td>Практическое занятие</td><td>Практический курс первого иностранного языка (испанский)</td><td>Иванова Марина Кирилловна, ст.преп.</td><td>СДО</td></tr>\n<tr><td>Вт</td><td>08.09.2026</td><td>12:00-14:50</td><td>4</td><td>ЛИН-3-23-01-04/1исп</td><td>Практическое занятие</td><td>Практический курс первого иностранного языка (испанский)</td><td>Иванова Марина Кирилловна, ст.преп.</td><td>206</td></tr>\n<tr><td>Вт</td><td>01.09.2026</td><td>12:00-14:50</td><td>4</td><td>ЛИН-3-23-01-04/2исп</td><td>Практическое занятие</td><td>Практический курс первого иностранного языка (испанский)</td><td>Чеснокова Дарья Сергеевна, ст.преп.</td><td>СДО</td></tr>\n</tbody>\n</table>"
+  },
+  "compactCodes": {
+    "postId": 244245,
+    "title": "Юриспруденция ЮР-3-26-17-19 (установочная сессия)",
+    "modified": "2026-09-17T10:24:49",
+    "html": "<table>\n<thead><tr><th>День Недели</th><th>Дата</th><th>Месяц</th><th>Время</th><th>Группы</th><th>Тип Занятий</th><th>Предмет</th><th>Должность Преподавателя</th><th>Преподаватель</th><th>Аудитория</th></tr></thead>\n<tbody>\n<tr><td>Понедельник</td><td>05</td><td>10</td><td>12.00</td><td>ЮР32617-19</td><td></td><td>Организационное собрание</td><td></td><td></td><td>201</td></tr>\n<tr><td>Вторник</td><td>06</td><td>10</td><td>08.30-11.20</td><td>ЮР32617-19</td><td>Л</td><td>Социология</td><td>доц.</td><td>Киселев Н.Е.</td><td>207</td></tr>\n<tr><td>Вторник</td><td>06</td><td>10</td><td>12.00-13.20</td><td>ЮР32617</td><td>К</td><td>КОНСУЛЬТАЦИЯ К ЗАЧЕТУ С ОЦЕНКОЙ: Ознакомительная практика</td><td>доц.</td><td>Клюканова Т.М.</td><td>127</td></tr>\n<tr><td>Среда</td><td>07</td><td>10</td><td>10.00-11.20</td><td>ЮР32618</td><td>К</td><td>КОНСУЛЬТАЦИЯ К ЗАЧЕТУ С ОЦЕНКОЙ: Ознакомительная практика</td><td>доц.</td><td>Павлов В.С.</td><td>127</td></tr>\n<tr><td>Среда</td><td>07</td><td>10</td><td>12.00-14.50</td><td>ЮР32617-19</td><td>Л</td><td>Философия</td><td>доц.</td><td>Машенцев А.В.</td><td>408</td></tr>\n</tbody>\n</table>"
+  },
+  "placeholderNoTable": {
+    "postId": 241860,
+    "title": "ПЛ-6-24-02",
+    "modified": "2026-09-01T10:00:00",
+    "html": ""
+  }
+};

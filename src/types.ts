@@ -1,7 +1,7 @@
 export interface Lesson {
   groupCode: string;
-  date: string | null; // ISO yyyy-mm-dd, or null if unparsable
-  dayOfWeek: string | null;
+  subgroup: string | null; // e.g. "1исп", "a", "гр. А": the row is for that sub-group only
+  date: string; // ISO yyyy-mm-dd
   time: string | null;
   type: string | null;
   subject: string | null;
@@ -23,6 +23,8 @@ export interface GroupInfo {
   monthIds: number[];
   postIds: number[];
   fileSlug: string;
+  lessonCount: number;
+  lastLessonDate: string | null;
 }
 
 export type GroupsIndex = Record<string, GroupInfo>;
@@ -52,7 +54,11 @@ export interface Meta {
   generatedAt: string;
   postCount: number;
   groupCount: number;
+  lessonCount: number;
+  emptyGroups: number;
   parseFailures: number;
+  /** Ids of the "re-sit" periods whose posts are not a group's timetable. */
+  retakePeriodIds: number[];
 }
 
 export interface SavedSelection {

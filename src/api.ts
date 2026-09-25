@@ -8,6 +8,10 @@ const dataUrl = (path: string) => `${import.meta.env.BASE_URL}data/${path}`;
 // under us at any time, so every load should ask the server "is this still current?".
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(dataUrl(path), { cache: 'no-cache' });
+  // A missing file is answered with an HTML "not found" page (sometimes with status 200
+  // by a fallback); either way it means "no such file", never a broken JSON file.
+  const isJson = (res.headers.get('content-type') ?? '').includes('json');
+  if (res.status === 404 || (res.ok && !isJson)) throw new Error(`Failed to load ${path}: HTTP 404`);
   if (!res.ok) throw new Error(`Failed to load ${path}: HTTP ${res.status}`);
   return res.json() as Promise<T>;
 }

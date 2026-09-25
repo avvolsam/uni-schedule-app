@@ -8,7 +8,6 @@
 
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { gzipSync } from 'node:zlib';
 import { fetchAllPages } from './lib/wpApi.mjs';
 import { buildDataset } from './lib/buildDataset.mjs';
 
@@ -35,8 +34,17 @@ async function main() {
   );
 
   console.log(
-    `  ${metaJson.groupCount} distinct groups found (${metaJson.parseFailures} posts failed to parse)`
+    `  ${metaJson.groupCount} groups (${metaJson.emptyGroups} without a schedule yet), ${metaJson.lessonCount} lessons`
   );
+  console.log(
+    `  skipped: ${metaJson.skippedRetakePosts} re-sit posts; empty posts: ${metaJson.postsWithoutTable}; ` +
+      `dates repaired: ${metaJson.datesRepaired}; rows without a date: ${metaJson.rowsWithoutDate}; ` +
+      `posts that failed to parse: ${metaJson.parseFailures}`
+  );
+  // A table layout nobody has taught the parser yet must not go unnoticed.
+  for (const t of metaJson.unrecognisedTables) {
+    console.warn(`  WARNING: unreadable table in post ${t.postId}: ${t.headers}`);
+  }
 
   // Reset output directory so removed/renamed groups don't leave stale files behind.
   await rm(DATA_DIR, { recursive: true, force: true });
@@ -50,22 +58,6 @@ async function main() {
   for (const [fileSlug, data] of scheduleFiles) {
     await writeFile(path.join(SCHEDULE_DIR, `${fileSlug}.json`), JSON.stringify(data));
   }
-
-  // TEMPORARY diagnostics: a compressed copy of the raw posts, so the table parser can be
-  // checked against every real table offline. Public site content only; remove once done.
-  await mkdir(path.join(DATA_DIR, 'debug'), { recursive: true });
-  const rawDump = posts.map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    title: p.title?.rendered,
-    modified: p.modified,
-    level: p.level,
-    course: p['course-raspisanie'],
-    form: p['form-obuchenia'],
-    month: p['month-raspisanie'],
-    html: p.content?.rendered,
-  }));
-  await writeFile(path.join(DATA_DIR, 'debug', 'raw-posts.json.gz'), gzipSync(JSON.stringify(rawDump)));
 
   console.log('Done.');
 }

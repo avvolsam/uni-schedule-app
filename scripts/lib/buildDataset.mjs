@@ -2,7 +2,7 @@
 // the dataset the frontend consumes. Kept separate from fetch-schedule.mjs's I/O so
 // the whole pipeline can be exercised in tests with fixture data.
 
-import { parsePostToLessons } from '../../shared/parseSchedule.mjs';
+import { parsePost } from '../../shared/parseSchedule.mjs';
 import { groupCodeToFileSlug } from '../../shared/groupSlug.mjs';
 import { normalizeLessons } from '../../shared/normalizeLessons.mjs';
 
@@ -70,30 +70,70 @@ function computeDirections(levelTerms, groupsJson) {
     .sort((a, b) => a.breadcrumb.localeCompare(b.breadcrumb, 'ru'));
 }
 
+
+const RETAKE_PERIOD = /дополнительная сессия/i;
+
 /**
  * @param {object[]} posts raw items from GET /wp-json/wp/v2/raspisanie
  * @param {{level:object[], course:object[], form:object[], month:object[]}} taxonomies
  *   raw term arrays from the corresponding taxonomy endpoints
- * @param {Date} referenceDate date to resolve day/month-only rows against
+ * @param {Date} referenceDate "now" for the parser
  */
 export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
   const groupsIndex = new Map();
   const lessonsByGroup = new Map();
-  let parseFailures = 0;
+  const quality = {
+    parseFailures: 0,
+    skippedRetakePosts: 0,
+    postsWithoutTable: 0,
+    unrecognisedTables: [],
+    rowsWithoutDate: 0,
+    datesRepaired: 0,
+  };
+
+  // "Дополнительная сессия" posts are re-sits of individual students' debts, not a group's
+  // timetable: they must not appear in every classmate's calendar.
+  const retakePeriodIds = new Set(
+    (taxonomies.month || []).filter((t) => RETAKE_PERIOD.test(t.name)).map((t) => t.id)
+  );
 
   for (const post of posts) {
-    let result;
-    try {
-      result = parsePostToLessons(post.content?.rendered || '', referenceDate);
-    } catch {
-      parseFailures++;
+    const monthIds = post['month-raspisanie'] || [];
+    if (monthIds.some((id) => retakePeriodIds.has(id))) {
+      quality.skippedRetakePosts++;
       continue;
     }
+
+    let result;
+    try {
+      result = parsePost(
+        { html: post.content?.rendered || '', title: post.title?.rendered || '', modified: post.modified },
+        { now: referenceDate }
+      );
+    } catch {
+      quality.parseFailures++;
+      continue;
+    }
+
+    if (result.status === 'no-table') quality.postsWithoutTable++;
+    if (result.status === 'retake') quality.skippedRetakePosts++;
+    quality.rowsWithoutDate += result.rowsWithoutDate;
+    quality.datesRepaired += result.datesRepaired;
+    for (const headers of result.unrecognised) {
+      if (headers.some(Boolean) && quality.unrecognisedTables.length < 20) {
+        quality.unrecognisedTables.push({ postId: post.id, headers: headers.join(' | ').slice(0, 120) });
+      }
+    }
+    if (result.status === 'retake') continue;
 
     const levelIds = post.level || [];
     const courseIds = post['course-raspisanie'] || [];
     const formIds = post['form-obuchenia'] || [];
-    const monthIds = post['month-raspisanie'] || [];
+
+    // Groups that only "guest" in a joint lecture row of someone else's post must not
+    // inherit that post's direction and course, so classify by the groups named in the
+    // post's title (or, if the title names none, by everyone in it).
+    const owners = new Set(result.titleGroupCodes.length ? result.titleGroupCodes : result.groupCodes);
 
     for (const groupCode of result.groupCodes) {
       if (!groupsIndex.has(groupCode)) {
@@ -106,11 +146,13 @@ export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
         });
       }
       const entry = groupsIndex.get(groupCode);
-      levelIds.forEach((id) => entry.levelIds.add(id));
-      courseIds.forEach((id) => entry.courseIds.add(id));
-      formIds.forEach((id) => entry.formIds.add(id));
-      monthIds.forEach((id) => entry.monthIds.add(id));
       entry.postIds.add(post.id);
+      if (owners.has(groupCode)) {
+        levelIds.forEach((id) => entry.levelIds.add(id));
+        courseIds.forEach((id) => entry.courseIds.add(id));
+        formIds.forEach((id) => entry.formIds.add(id));
+        monthIds.forEach((id) => entry.monthIds.add(id));
+      }
     }
 
     for (const lesson of result.lessons) {
@@ -119,15 +161,28 @@ export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
     }
   }
 
+  const generatedAt = new Date().toISOString();
+  const scheduleFiles = new Map(); // fileSlug -> { groupCode, lessons, generatedAt }
   const groupsJson = {};
+  let lessonCount = 0;
+  let emptyGroups = 0;
+
   for (const [groupCode, entry] of groupsIndex) {
+    const lessons = normalizeLessons(lessonsByGroup.get(groupCode) || []);
+    const fileSlug = groupCodeToFileSlug(groupCode);
+    scheduleFiles.set(fileSlug, { groupCode, lessons, generatedAt });
+    lessonCount += lessons.length;
+    if (lessons.length === 0) emptyGroups++;
+
     groupsJson[groupCode] = {
       levelIds: [...entry.levelIds],
       courseIds: [...entry.courseIds],
       formIds: [...entry.formIds],
       monthIds: [...entry.monthIds],
       postIds: [...entry.postIds],
-      fileSlug: groupCodeToFileSlug(groupCode),
+      fileSlug,
+      lessonCount: lessons.length,
+      lastLessonDate: lessons.length ? lessons[lessons.length - 1].date : null,
     };
   }
 
@@ -140,21 +195,14 @@ export function buildDataset(posts, taxonomies, referenceDate = new Date()) {
 
   const directionsJson = computeDirections(taxonomiesJson.level, groupsJson);
 
-  const scheduleFiles = new Map(); // fileSlug -> { groupCode, lessons, generatedAt }
-  const generatedAt = new Date().toISOString();
-  for (const [groupCode, lessons] of lessonsByGroup) {
-    scheduleFiles.set(groupCodeToFileSlug(groupCode), {
-      groupCode,
-      lessons: normalizeLessons(lessons),
-      generatedAt,
-    });
-  }
-
   const metaJson = {
     generatedAt,
     postCount: posts.length,
     groupCount: groupsIndex.size,
-    parseFailures,
+    lessonCount,
+    emptyGroups,
+    retakePeriodIds: [...retakePeriodIds],
+    ...quality,
   };
 
   return { groupsJson, taxonomiesJson, directionsJson, scheduleFiles, metaJson };

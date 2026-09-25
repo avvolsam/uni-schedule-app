@@ -1,5 +1,5 @@
 import { diffLessons, isEmptyDiff } from '../shared/diffLessons.mjs';
-import { fetchGroups, fetchSchedule } from './api';
+import { fetchGroups, fetchMeta, fetchSchedule } from './api';
 import { todayIso } from './format';
 import { fetchLiveLessons } from './live';
 import {
@@ -76,9 +76,12 @@ export async function loadFromServer(groupCode: string): Promise<ScheduleState> 
 }
 
 async function loadLive(groupCode: string): Promise<{ state: ScheduleState; changed: boolean }> {
-  const groups = await fetchGroups().catch(() => null);
+  const [groups, meta] = await Promise.all([
+    fetchGroups().catch(() => null),
+    fetchMeta().catch(() => null),
+  ]);
   const knownPostIds = groups?.[groupCode]?.postIds ?? [];
-  const lessons = await fetchLiveLessons(groupCode, knownPostIds);
+  const lessons = await fetchLiveLessons(groupCode, knownPostIds, meta?.retakePeriodIds ?? []);
 
   // An empty answer for a group we already have data for means something went wrong
   // (site hiccup, search miss), not that the whole schedule vanished — don't wipe it.
